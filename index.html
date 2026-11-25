@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>חצי-חצי | ניהול הוצאות לשותפים בלי דרמות</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Heebo -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Heebo', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Heebo', sans-serif; background-color: #f8fafc; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+    @keyframes slideDownToast {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .animate-toast { animation: slideDownToast 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col justify-between relative">
+
+  <!-- ==================== PHONE PUSH NOTIFICATION SIMULATOR (TOAST) ==================== -->
+  <div id="push-notification-toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4 hidden pointer-events-auto">
+    <div class="bg-slate-900/95 text-white p-4 rounded-3xl shadow-2xl backdrop-blur-md border border-slate-700/60 animate-toast">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center font-bold text-lg text-white shrink-0 shadow-md">
+          ½
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-1">
+              <i data-lucide="bell" class="w-3 h-3"></i> חצי-חצי • תזכורת סוף חודש
+            </span>
+            <span class="text-[10px] text-slate-400">עכשיו</span>
+          </div>
+          <h4 class="text-xs font-bold text-white mt-1" id="toast-title">תזכורת לחוב פתוח</h4>
+          <p class="text-xs text-slate-300 mt-0.5 leading-snug" id="toast-body">
+            היי! נותרו יומיים לסגירת מחזור החשבונות. יש לך חוב פתוח בדירה.
+          </p>
+          <div class="mt-2.5 flex items-center gap-2">
+            <button onclick="switchTab('settle-tab'); closePushToast();" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] px-3 py-1.5 rounded-xl transition flex items-center gap-1">
+              <i data-lucide="send" class="w-3 h-3"></i> שלם ב-Bit עכשיו
+            </button>
+            <button onclick="closePushToast()" class="text-slate-400 hover:text-white text-[11px] px-2 py-1 transition">
+              התעלם
+            </button>
+          </div>
+        </div>
+        <button onclick="closePushToast()" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOP BAR -->
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand Logo & Address -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-400 text-white flex items-center justify-center font-bold text-xl shadow-md shadow-brand-500/20">
+          ½
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-extrabold tracking-tight text-slate-900" id="header-app-name">חצי-חצי</h1>
+            <span class="text-xs bg-brand-50 text-brand-700 font-semibold px-2 py-0.5 rounded-full border border-brand-200">דירה פעילה</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs text-slate-500">
+            <span id="header-apt-address" class="font-medium text-slate-700">הרצל 42, תל אביב</span>
+            <span>•</span>
+            <span id="header-apt-roommates-count">4 שותפות/ים</span>
+            <button onclick="openEditAptModal()" class="text-brand-600 hover:text-brand-800 p-0.5 rounded hover:bg-slate-100 transition" title="ערוך כתובת ופרטי דירה">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Persona Switcher -->
+      <div class="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200 text-xs">
+        <span class="text-slate-500 hidden sm:inline px-1">מחובר כעת:</span>
+        <div id="persona-switchers-container" class="flex items-center gap-1">
+          <!-- Populated dynamically via JS: נטלי, חלי, אניה, טל -->
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 py-6 w-full flex-1 space-y-6">
+
+    <!-- BILLING CYCLE & REMINDER NOTICE BAR -->
+    <div class="bg-indigo-50/80 border border-indigo-100 rounded-2xl p-3 px-4 flex flex-wrap items-center justify-between gap-3 text-xs text-indigo-900">
+      <div class="flex items-center gap-2">
+        <div class="p-1.5 bg-indigo-100 text-brand-600 rounded-lg">
+          <i data-lucide="calendar" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <span class="font-bold">מחזור נוכחי:</span> 
+          <span id="cycle-dates-text" class="font-semibold text-slate-700">15 לחודש עד 14 לחודש</span>
+          <span class="text-emerald-700 bg-emerald-100 font-bold px-2 py-0.5 rounded-md text-[10px] mr-2 inline-flex items-center gap-1">
+            <i data-lucide="check" class="w-3 h-3"></i> תזכורת סוף חודש פעילה
+          </span>
+        </div>
+      </div>
+
+      <!-- Fast Simulator Trigger for User -->
+      <button onclick="triggerDebtNotificationDemo()" class="bg-white hover:bg-indigo-50 text-brand-700 border border-brand-200 font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm text-xs">
+        <i data-lucide="bell-ring" class="w-3.5 h-3.5 text-amber-500"></i>
+        <span>בדוק קפיצת התראה לדייר חייב</span>
+      </button>
+    </div>
+
+    <!-- HERO DASHBOARD BANNER -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      
+      <!-- Card 1: Personal Balance -->
+      <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm relative overflow-hidden group">
+        <div class="absolute -left-4 -top-4 w-24 h-24 bg-brand-50 rounded-full blur-xl group-hover:scale-125 transition-transform duration-500"></div>
+        <div class="relative">
+          <div class="flex justify-between items-start">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">המאזן האישי שלך (<span id="user-display-name">נטלי</span>)</span>
+            <div id="balance-badge" class="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+              <i data-lucide="arrow-down-left" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <span id="user-balance-amount" class="text-3xl font-extrabold text-emerald-600">+₪240.00</span>
+            <p id="user-balance-desc" class="text-xs text-slate-500 mt-1">מגיע לך כסף משותפות הדירה</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Total Month Expenses -->
+      <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm">
+        <div class="flex justify-between items-start">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">סך הוצאות המחזור בדירה</span>
+          <div class="p-2 rounded-xl bg-slate-100 text-slate-600">
+            <i data-lucide="wallet" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div class="mt-3">
+          <span id="apartment-total" class="text-3xl font-extrabold text-slate-900">₪1,380</span>
+          <p class="text-xs text-slate-500 mt-1">חשמל, אינטרנט, ועד בית וקניות שוטפות</p>
+        </div>
+      </div>
+
+      <!-- Card 3: Debt Simplification Shortcut -->
+      <div class="bg-gradient-to-br from-brand-600 to-indigo-700 text-white p-5 rounded-3xl shadow-lg shadow-brand-500/20 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between text-indigo-100 text-xs">
+            <span class="font-semibold flex items-center gap-1.5">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+              פישוט חובות חכם
+            </span>
+            <span class="bg-white/20 px-2 py-0.5 rounded-full text-[10px]">ללא עמלות</span>
+          </div>
+          <div class="mt-2 text-sm text-indigo-50 leading-snug" id="simplified-settlement-text">
+            במקום עסקאות מרובות: <br>
+            <strong class="text-white font-bold">חלי מעבירה לנטלי ₪115</strong> וכל הדירה מאוזנת!
+          </div>
+        </div>
+        <button onclick="switchTab('settle-tab')" class="mt-3 w-full bg-white text-brand-700 font-bold text-xs py-2 px-3 rounded-xl hover:bg-indigo-50 transition-colors flex items-center justify-center gap-1.5 shadow-sm">
+          <span>מעבר לסגירת חובות ב-Bit</span>
+          <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- QUICK ACTIONS & TAB NAVIGATION -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+      <!-- Tabs -->
+      <div class="flex items-center gap-1.5 bg-slate-200/70 p-1 rounded-2xl w-full sm:w-auto overflow-x-auto">
+        <button onclick="switchTab('expenses-tab')" id="tab-btn-expenses" class="px-4 py-2 rounded-xl text-xs font-bold transition-all bg-white text-slate-900 shadow-sm flex items-center gap-2 whitespace-nowrap">
+          <i data-lucide="receipt" class="w-3.5 h-3.5 text-brand-600"></i>
+          הוצאות הדירה
+        </button>
+        <button onclick="switchTab('wishlist-tab')" id="tab-btn-wishlist" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-2 whitespace-nowrap">
+          <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i>
+          מה חסר בבית?
+          <span id="wishlist-badge" class="bg-brand-100 text-brand-700 text-[10px] font-bold px-1.5 py-0.2 rounded-full">2</span>
+        </button>
+        <button onclick="switchTab('settle-tab')" id="tab-btn-settle" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-2 whitespace-nowrap">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          התחשבנות ו-Bit
+        </button>
+        <button onclick="switchTab('settings-tab')" id="tab-btn-settings" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-2 whitespace-nowrap">
+          <i data-lucide="users" class="w-3.5 h-3.5"></i>
+          שותפים ואחוזים
+        </button>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <button onclick="openOcrModal()" class="flex-1 sm:flex-none px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 font-bold text-xs hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 shadow-sm">
+          <i data-lucide="scan-line" class="w-4 h-4 text-brand-600"></i>
+          <span>סרוק קבלה ב-AI</span>
+        </button>
+        <button onclick="openAddExpenseModal()" class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-brand-600 text-white font-bold text-xs hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 shadow-md shadow-brand-500/20">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span>הוסף הוצאה</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 1: EXPENSES LIST ==================== -->
+    <div id="expenses-tab" class="space-y-4">
+      <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+        
+        <!-- Filter bar -->
+        <div class="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <span class="font-bold text-slate-700">היסטוריית תשלומים</span>
+          <div class="flex items-center gap-2">
+            <span class="text-slate-400">סינון:</span>
+            <button onclick="filterExpenses('all')" class="filter-btn active font-semibold text-brand-600 bg-brand-50 px-2.5 py-1 rounded-lg">הכל</button>
+            <button onclick="filterExpenses('חשבונות')" class="filter-btn text-slate-500 hover:text-slate-800 px-2.5 py-1 rounded-lg">חשבונות</button>
+            <button onclick="filterExpenses('סופר')" class="filter-btn text-slate-500 hover:text-slate-800 px-2.5 py-1 rounded-lg">סופר</button>
+            <button onclick="filterExpenses('בית')" class="filter-btn text-slate-500 hover:text-slate-800 px-2.5 py-1 rounded-lg">בית</button>
+          </div>
+        </div>
+
+        <!-- Expenses List Items -->
+        <div id="expenses-list" class="divide-y divide-slate-100">
+          <!-- Dynamically populated via JS -->
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==================== TAB 2: WISHLIST / RESTOCK ==================== -->
+    <div id="wishlist-tab" class="hidden space-y-4">
+      <div class="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm">
+        <div class="max-w-xl mx-auto">
+          
+          <div class="text-center mb-6">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 mb-2">
+              <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900">מה חסר בדירה?</h3>
+            <p class="text-xs text-slate-500 mt-1">מי שקונה ציוד משותף לוחץ "קניתי", והסכום מזכה אותו מיד במאזן מול כולם!</p>
+          </div>
+
+          <!-- Add Item Form -->
+          <div class="flex gap-2 mb-6">
+            <input type="text" id="new-item-input" placeholder="לדוגמה: נייר טואלט, נוזל רצפות, שמן זית..." class="flex-1 text-xs border border-slate-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
+            <button onclick="addWishlistItem()" class="bg-brand-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs hover:bg-brand-700 transition flex items-center gap-1.5">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              הוסף לרשימה
+            </button>
+          </div>
+
+          <!-- Wishlist Items -->
+          <div id="wishlist-items-container" class="space-y-2.5">
+            <!-- Dynamically populated -->
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 3: SETTLEMENT / BIT ==================== -->
+    <div id="settle-tab" class="hidden space-y-4">
+      <div class="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm max-w-2xl mx-auto">
+        
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-brand-50 text-brand-600 mb-2">
+            <i data-lucide="credit-card" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900">סגירת חובות ואיזון הדירה</h3>
+          <p class="text-xs text-slate-500 mt-1">חישוב מסלול מינימלי ב-Bit / PayBox כדי שכולם יישארו מאופסים.</p>
+        </div>
+
+        <!-- Settlements list -->
+        <div class="space-y-3" id="settlement-actions-list">
+          <!-- Dynamically populated -->
+        </div>
+
+        <div class="mt-8 bg-slate-50 p-4 rounded-2xl border border-slate-200/80 text-xs text-slate-600 flex items-start gap-3">
+          <i data-lucide="shield-check" class="w-5 h-5 text-emerald-600 shrink-0 mt-0.5"></i>
+          <div>
+            <strong class="font-bold text-slate-800">ללא צד שלישי:</strong> האפליקציה אינה מחזיקה בכספי המשתמשים. התשלומים מבוצעים ישירות דרך Bit או PayBox בלחיצת כפתור אחת.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==================== TAB 4: SETTINGS, ROOMMATES & PERCENTAGES ==================== -->
+    <div id="settings-tab" class="hidden space-y-6">
+      
+      <!-- Card: Roommates Management & Security -->
+      <div class="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm max-w-2xl mx-auto space-y-5">
+        
+        <div class="flex flex-wrap items-center justify-between pb-3 border-b border-slate-100 gap-2">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">שותפי הדירה והרשאות</h3>
+            <p class="text-xs text-slate-500">רק הדייר עצמו יכול להסיר את חשבונו מטעמי אבטחה</p>
+          </div>
+          <button onclick="openInviteRoommateModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="mail-plus" class="w-3.5 h-3.5"></i>
+            הזמן שותף באימייל אישי
+          </button>
+        </div>
+
+        <!-- Roommates List Container -->
+        <div id="roommates-settings-list" class="space-y-3">
+          <!-- Dynamically populated via JS -->
+        </div>
+
+        <!-- Permission Notice -->
+        <div class="bg-amber-50 p-3.5 rounded-2xl border border-amber-200/80 text-xs text-amber-900 flex items-start gap-2.5">
+          <i data-lucide="lock" class="w-4 h-4 text-amber-700 shrink-0 mt-0.5"></i>
+          <div>
+            <strong class="font-bold">כלל אבטחה מובנה:</strong> אף שותף אינו יכול למחוק שותף אחר. רק השותף שמחובר בפועל רשאי ללחוץ על <em>"עזיבת דירה ומחיקת החשבון שלי"</em>.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Card: Percentage Customization (Default Equal 25%) -->
+      <div class="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm max-w-2xl mx-auto space-y-5">
+        
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">אחוזי חלוקת שכר דירה והוצאות</h3>
+            <p class="text-xs text-slate-500">ברירת המחדל היא חלוקה שווה. ניתן להתאים אישית לפי גודל החדר.</p>
+          </div>
+          <button onclick="resetEqualPercentages()" class="text-brand-600 hover:text-brand-800 text-xs font-bold bg-brand-50 px-3 py-1.5 rounded-xl transition">
+            אפס לחלוקה שווה
+          </button>
+        </div>
+
+        <!-- Percentage inputs list -->
+        <div id="percentage-controls-container" class="space-y-3">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <!-- Total Percentage Validation Bar -->
+        <div id="percent-total-bar" class="p-3 rounded-2xl flex items-center justify-between text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+          <span>סה״כ אחוזים בדירה:</span>
+          <span id="percent-total-display">100% ✔️ (תקין)</span>
+        </div>
+
+      </div>
+
+      <!-- Card: Reminder & Billing Cycle Settings -->
+      <div class="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm max-w-2xl mx-auto space-y-5">
+        
+        <div class="pb-3 border-b border-slate-100">
+          <h3 class="text-base font-bold text-slate-900">הגדרות תזכורות סוף חודש (Notifications)</h3>
+          <p class="text-xs text-slate-500">שליחת התראה אוטומטית לדיירים בעלי חוב לקראת סוף המחזור</p>
+        </div>
+
+        <div class="space-y-4 text-xs">
+          
+          <div class="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+            <div>
+              <span class="font-bold text-slate-800 block">הפעל התראת תזכורת חודשית</span>
+              <span class="text-slate-400 text-[11px]">שולח פוש והודעת WhatsApp לדיירים החייבים</span>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="reminder-active-toggle" checked onchange="toggleReminder(this.checked)" class="sr-only peer">
+              <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600"></div>
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+              <label class="block font-semibold text-slate-700 mb-1">מועד שליחת התזכורת:</label>
+              <select id="reminder-days-select" class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 font-medium outline-none">
+                <option value="2" selected>יומיים לפני סוף המחזור (מומלץ)</option>
+                <option value="1">יום אחד לפני סוף המחזור</option>
+                <option value="3">3 ימים לפני סוף המחזור</option>
+              </select>
+            </div>
+
+            <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+              <label class="block font-semibold text-slate-700 mb-1">יום פתיחת מחזור החיוב:</label>
+              <select onchange="updateBillingCycleDay(this.value)" id="cycle-day-select" class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 font-medium outline-none">
+                <option value="1">1 לחודש</option>
+                <option value="10">10 לחודש</option>
+                <option value="15" selected>15 לחודש</option>
+                <option value="20">20 לחודש</option>
+              </select>
+            </div>
+          </div>
+
+          <button onclick="triggerDebtNotificationDemo()" class="w-full bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-2 border border-brand-200">
+            <i data-lucide="bell" class="w-4 h-4"></i>
+            <span>בדוק והדמה קפיצת התראה לדייר/ת שחייב/ת כסף</span>
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ==================== MODAL: INVITE ROOMMATE VIA PERSONAL EMAIL ==================== -->
+  <div id="invite-roommate-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4 border border-slate-100">
+      
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <div class="p-1.5 bg-brand-100 text-brand-600 rounded-xl">
+            <i data-lucide="mail-plus" class="w-4 h-4"></i>
+          </div>
+          <h3 class="font-bold text-slate-900 text-base">הזמנת שותף/ה באימייל אישי</h3>
+        </div>
+        <button onclick="closeInviteRoommateModal()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-500">
+        יצירת משתמש נעשית באמצעות כתובת האימייל האישית. הדייר יקבל הזמנה מאובטחת להצטרף לדירה.
+      </p>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">שם הדייר/ת</label>
+          <input type="text" id="new-rm-name" placeholder="לדוגמה: שירן כהן" class="w-full border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">אימייל אישי (חובה להתחברות)</label>
+          <input type="email" id="new-rm-email" placeholder="shiran@gmail.com" class="w-full border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">סוג חדר / הערות</label>
+            <input type="text" id="new-rm-room" placeholder="חדר עם מרפסת" class="w-full border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">אחוז שכר דירה (%)</label>
+            <input type="number" id="new-rm-percent" value="20" min="1" max="100" class="w-full border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none font-bold">
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-3 flex gap-2">
+        <button onclick="saveInvitedRoommate()" class="flex-1 bg-brand-600 text-white font-bold py-2.5 rounded-xl hover:bg-brand-700 transition text-xs flex items-center justify-center gap-1.5">
+          <i data-lucide="send" class="w-3.5 h-3.5"></i>
+          שלח הזמנה לאימייל
+        </button>
+        <button onclick="closeInviteRoommateModal()" class="px-4 py-2.5 border border-slate-200 text-slate-600 rounded-xl font-semibold hover:bg-slate-50 transition text-xs">
+          ביטול
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: EDIT APARTMENT DETAILS ==================== -->
+  <div id="edit-apt-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4 border border-slate-100">
+      
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+        <h3 class="font-bold text-slate-900 text-base">עריכת פרטי הדירה</h3>
+        <button onclick="closeEditAptModal()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">כינוי הדירה</label>
+          <input type="text" id="edit-apt-name-input" value="דירת הרצל 42" class="w-full border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">כתובת (רחוב ומספר)</label>
+          <input type="text" id="edit-apt-street-input" value="הרצל 42" class="w-full border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">עיר</label>
+          <input type="text" id="edit-apt-city-input" value="תל אביב" class="w-full border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none">
+        </div>
+      </div>
+
+      <div class="pt-3 flex gap-2">
+        <button onclick="saveAptDetails()" class="flex-1 bg-brand-600 text-white font-bold py-2.5 rounded-xl hover:bg-brand-700 transition text-xs">
+          שמור שינויים
+        </button>
+        <button onclick="closeEditAptModal()" class="px-4 py-2.5 border border-slate-200 text-slate-600 rounded-xl font-semibold hover:bg-slate-50 transition text-xs">
+          ביטול
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: ADD EXPENSE ==================== -->
+  <div id="add-expense-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4 border border-slate-100">
+      
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+        <h3 class="font-bold text-slate-900 text-base">הוספת הוצאה חדשה</h3>
+        <button onclick="closeAddExpenseModal()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">תיאור ההוצאה</label>
+          <input type="text" id="exp-title" placeholder="לדוגמה: חשבון חשמל, קנייה בשופרסל..." class="w-full border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">סכום (₪)</label>
+            <input type="number" id="exp-amount" placeholder="0.00" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-base font-bold focus:ring-2 focus:ring-brand-500 outline-none">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">קטגוריה</label>
+            <select id="exp-category" class="w-full border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none bg-white">
+              <option value="סופר">🛒 סופרמרקט</option>
+              <option value="חשבונות">⚡ חשבונות (חשמל/ארנונה)</option>
+              <option value="בית">🧼 ציוד לבית וניקיון</option>
+              <option value="אחר">📦 אחר</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Bi-monthly check -->
+        <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+          <div>
+            <span class="font-bold text-slate-700 block">חשבון דו-חודשי?</span>
+            <span class="text-[10px] text-slate-400">מתאים לחשמל, מים וארנונה המגיעים פעם בחודשיים</span>
+          </div>
+          <input type="checkbox" id="exp-is-bimonthly" class="w-4 h-4 text-brand-600 rounded">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">מי שילם/ה?</label>
+          <select id="exp-payer" class="w-full border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none bg-white">
+            <!-- Dynamically populated -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">איך מחלקים?</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="border border-brand-300 p-2 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer bg-brand-50 text-brand-700 font-bold">
+              <input type="radio" name="split-type" value="equal" checked class="hidden">
+              <span id="split-equal-label">שווה בין כולם</span>
+            </label>
+            <label class="border border-slate-200 p-2 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer hover:bg-slate-50 text-slate-600">
+              <input type="radio" name="split-type" value="percent" class="hidden">
+              <span>לפי אחוזי שכר דירה</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-3 flex gap-2">
+        <button onclick="saveExpense()" class="flex-1 bg-brand-600 text-white font-bold py-2.5 rounded-xl hover:bg-brand-700 transition">
+          שמור הוצאה
+        </button>
+        <button onclick="closeAddExpenseModal()" class="px-4 py-2.5 border border-slate-200 text-slate-600 rounded-xl font-semibold hover:bg-slate-50 transition">
+          ביטול
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: AI OCR RECEIPT SCANNER ==================== -->
+  <div id="ocr-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-4 border border-slate-100 max-h-[90vh] flex flex-col justify-between">
+      
+      <div>
+        <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <div class="p-1.5 bg-brand-100 text-brand-600 rounded-xl">
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+            </div>
+            <h3 class="font-bold text-slate-900 text-base">סורק קבלות חכם (AI Vision)</h3>
+          </div>
+          <button onclick="closeOcrModal()" class="text-slate-400 hover:text-slate-600 p-1">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <p class="text-xs text-slate-500 mt-2">
+          ה-AI קרא קבלה מ״שופרסל שלי״. סמן אילו פריטים <strong>משותפים לכל הדירה</strong> (פריטים לא מסומנים יישארו כהוצאה אישית שלך ולא יחולקו).
+        </p>
+
+        <!-- Receipt items list simulation -->
+        <div class="mt-4 border border-slate-200 rounded-2xl p-3 bg-slate-50 space-y-2 text-xs">
+          <label class="flex items-center justify-between p-2 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-brand-300">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" checked onchange="recalcOcrTotal()" class="ocr-item w-4 h-4 text-brand-600 rounded" data-price="24.90">
+              <span class="font-semibold text-slate-800">🧻 נייר טואלט 32 גלילים (לילי)</span>
+            </div>
+            <span class="font-bold text-slate-700">₪24.90</span>
+          </label>
+
+          <label class="flex items-center justify-between p-2 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-brand-300">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" checked onchange="recalcOcrTotal()" class="ocr-item w-4 h-4 text-brand-600 rounded" data-price="13.80">
+              <span class="font-semibold text-slate-800">🥛 2x חלב תנובה 3% קרטון</span>
+            </div>
+            <span class="font-bold text-slate-700">₪13.80</span>
+          </label>
+
+          <label class="flex items-center justify-between p-2 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-brand-300">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" checked onchange="recalcOcrTotal()" class="ocr-item w-4 h-4 text-brand-600 rounded" data-price="32.50">
+              <span class="font-semibold text-slate-800">🫒 שמן זית כתית מעולה 750 מ״ל</span>
+            </div>
+            <span class="font-bold text-slate-700">₪32.50</span>
+          </label>
+
+          <label class="flex items-center justify-between p-2 bg-white rounded-xl border border-slate-200 cursor-pointer opacity-50 hover:opacity-100 transition-opacity">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" onchange="recalcOcrTotal()" class="ocr-item w-4 h-4 text-brand-600 rounded" data-price="44.00">
+              <span class="text-slate-600">🍺 שישיית בירה (אישי)</span>
+            </div>
+            <span class="font-medium text-slate-500">₪44.00</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Total shared sum calculation -->
+      <div class="pt-3 border-t border-slate-100">
+        <div class="flex justify-between items-center mb-3">
+          <span class="text-xs text-slate-500">סך הכל משותף לדירה (מתחלק ל-4):</span>
+          <span id="ocr-shared-total" class="text-lg font-extrabold text-brand-600">₪71.20</span>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="approveOcrExpense()" class="flex-1 bg-brand-600 text-white font-bold py-2.5 rounded-xl hover:bg-brand-700 transition flex items-center justify-center gap-2 text-xs">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            אישור והוספה כהוצאה משותפת
+          </button>
+          <button onclick="closeOcrModal()" class="px-4 py-2.5 border border-slate-200 text-slate-600 rounded-xl font-semibold hover:bg-slate-50 transition text-xs">
+            ביטול
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: BIT SIMULATION ==================== -->
+  <div id="bit-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center space-y-4 border border-slate-100">
+      
+      <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-3xl mx-auto flex items-center justify-center shadow-inner">
+        <i data-lucide="smartphone" class="w-8 h-8"></i>
+      </div>
+
+      <div>
+        <h3 class="text-lg font-bold text-slate-900" id="bit-modal-title">העברה ב-Bit</h3>
+        <p class="text-xs text-slate-500 mt-1" id="bit-modal-desc">פותח את אפליקציית Bit להעברה ישירה</p>
+      </div>
+
+      <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+        <span class="text-xs text-slate-400">סכום להעברה:</span>
+        <div class="text-3xl font-black text-slate-900 mt-0.5" id="bit-modal-amount">₪115.00</div>
+      </div>
+
+      <div class="space-y-2 pt-2">
+        <button onclick="confirmSettlementPayment()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-2xl hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 text-xs flex items-center justify-center gap-2">
+          <i data-lucide="check-circle" class="w-4 h-4"></i>
+          סימולציה: "שילמתי ב-Bit בהצלחה!"
+        </button>
+        <button onclick="closeBitModal()" class="w-full py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 transition">
+          חזור
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-400">
+    <div class="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <span class="font-semibold text-slate-600">חצי-חצי © 2026 — אפליקציית ניהול הוצאות לשותפים</span>
+      <span>נטלי • חלי • אניה • טל | הרצל 42 ת״א</span>
+    </div>
+  </footer>
+
+  <!-- APPLICATION LOGIC IN JAVASCRIPT -->
+  <script>
+    // State: 4 roommates with equal 25% default
+    let aptDetails = {
+      name: 'דירת הרצל 42',
+      street: 'הרצל 42',
+      city: 'תל אביב',
+      billingCycleDay: 15
+    };
+
+    let roommates = [
+      { id: 'natali', name: 'נטלי', email: 'natali@gmail.com', sharePercent: 25, room: 'חדר מאסטר', isAway: false },
+      { id: 'heli', name: 'חלי', email: 'heli@gmail.com', sharePercent: 25, room: 'חדר מרפסת', isAway: false },
+      { id: 'anya', name: 'אניה', email: 'anya@gmail.com', sharePercent: 25, room: 'חדר גלריה', isAway: false },
+      { id: 'tal', name: 'טל', email: 'tal@gmail.com', sharePercent: 25, room: 'חדר סטודיו', isAway: false }
+    ];
+
+    let activeUser = 'natali'; // Current logged-in persona
+
+    let expenses = [
+      { id: 1, title: 'חשבון חשמל (דו-חודשי)', amount: 600, payer: 'נטלי', category: 'חשבונות', date: 'אתמול', isBimonthly: true },
+      { id: 2, title: 'קניות סופרמרקט (סבון, שמן, חלב, ביצים)', amount: 280, payer: 'חלי', category: 'סופר', date: 'לפני יומיים', isBimonthly: false },
+      { id: 3, title: 'ועד בית חודשי', amount: 300, payer: 'אניה', category: 'חשבונות', date: '01/11/2026', isBimonthly: false },
+      { id: 4, title: 'אינטרנט סיבים אופטיים', amount: 120, payer: 'טל', category: 'חשבונות', date: '01/11/2026', isBimonthly: false },
+      { id: 5, title: 'טבליות למדיח + שקיות זבל', amount: 80, payer: 'נטלי', category: 'בית', date: 'לפני 4 ימים', isBimonthly: false }
+    ];
+
+    let wishlist = [
+      { id: 101, title: 'נייר טואלט וספוגיות כלים', requestedBy: 'אניה', estimated: '₪35' },
+      { id: 102, title: 'שמן קנולה ומלח גס', requestedBy: 'חלי', estimated: '₪20' }
+    ];
+
+    let settlements = [
+      { from: 'חלי', to: 'נטלי', amount: 115 },
+      { from: 'טל', to: 'נטלי', amount: 85 }
+    ];
+
+    let currentFilter = 'all';
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      renderAll();
+    });
+
+    function renderAll() {
+      updateAptHeader();
+      renderPersonaSwitchers();
+      renderRoommatesSettings();
+      renderPercentageControls();
+      renderPayerDropdown();
+      renderDashboard();
+      renderExpenses();
+      renderWishlist();
+      renderSettlements();
+      lucide.createIcons();
+    }
+
+    // Apartment details
+    function updateAptHeader() {
+      const fullAddr = `${aptDetails.street}, ${aptDetails.city}`;
+      document.getElementById('header-apt-address').textContent = fullAddr;
+      document.getElementById('header-apt-roommates-count').textContent = `${roommates.length} שותפים`;
+      document.getElementById('split-equal-label').textContent = `שווה בין כולן/ם (${(100 / roommates.length).toFixed(0)}%)`;
+      
+      const cycleDay = aptDetails.billingCycleDay;
+      document.getElementById('cycle-dates-text').textContent = `ה-${cycleDay} לחודש עד ה-${cycleDay - 1} לחודש הבא`;
+      document.getElementById('cycle-day-select').value = cycleDay;
+    }
+
+    function openEditAptModal() {
+      document.getElementById('edit-apt-name-input').value = aptDetails.name;
+      document.getElementById('edit-apt-street-input').value = aptDetails.street;
+      document.getElementById('edit-apt-city-input').value = aptDetails.city;
+      document.getElementById('edit-apt-modal').classList.remove('hidden');
+    }
+    function closeEditAptModal() {
+      document.getElementById('edit-apt-modal').classList.add('hidden');
+    }
+
+    function saveAptDetails() {
+      aptDetails.name = document.getElementById('edit-apt-name-input').value.trim() || aptDetails.name;
+      aptDetails.street = document.getElementById('edit-apt-street-input').value.trim() || aptDetails.street;
+      aptDetails.city = document.getElementById('edit-apt-city-input').value.trim() || aptDetails.city;
+      closeEditAptModal();
+      updateAptHeader();
+      triggerConfetti();
+      alert("פרטי הדירה עודכנו בהצלחה!");
+    }
+
+    function updateBillingCycleDay(day) {
+      aptDetails.billingCycleDay = parseInt(day);
+      updateAptHeader();
+      alert(`מחזור החישוב עודכן! מתחיל ב-${day} לכל חודש.`);
+    }
+
+    // Persona switchers
+    function renderPersonaSwitchers() {
+      const container = document.getElementById('persona-switchers-container');
+      container.innerHTML = '';
+      roommates.forEach(rm => {
+        const isSelected = (rm.id === activeUser);
+        const btn = document.createElement('button');
+        btn.onclick = () => switchUser(rm.id);
+        btn.className = isSelected 
+          ? "px-2.5 py-1 rounded-lg font-bold transition-all bg-white text-brand-600 shadow-sm"
+          : "px-2.5 py-1 rounded-lg font-medium text-slate-600 hover:text-slate-900 transition-all";
+        btn.textContent = rm.name;
+        container.appendChild(btn);
+      });
+
+      const current = roommates.find(r => r.id === activeUser) || roommates[0];
+      document.getElementById('user-display-name').textContent = current.name;
+    }
+
+    function switchUser(userId) {
+      activeUser = userId;
+      renderAll();
+    }
+
+    // Payer dropdown in Expense modal
+    function renderPayerDropdown() {
+      const select = document.getElementById('exp-payer');
+      select.innerHTML = '';
+      roommates.forEach(rm => {
+        const opt = document.createElement('option');
+        opt.value = rm.name;
+        opt.textContent = rm.name + (rm.id === activeUser ? ' (אני)' : '');
+        if (rm.id === activeUser) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    // Roommates Settings List & SECURITY: Only logged-in user can delete themselves!
+    function renderRoommatesSettings() {
+      const container = document.getElementById('roommates-settings-list');
+      container.innerHTML = '';
+
+      roommates.forEach(rm => {
+        const isMe = (rm.id === activeUser);
+        const div = document.createElement('div');
+        div.className = `p-3.5 rounded-2xl border transition-all flex flex-wrap items-center justify-between gap-3 ${
+          isMe ? 'border-brand-200 bg-brand-50/30' : 'border-slate-200 bg-white'
+        }`;
+        
+        div.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full ${isMe ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-700'} flex items-center justify-center font-bold text-sm">
+              ${rm.name[0]}
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-xs text-slate-800">${rm.name}</span>
+                ${isMe ? '<span class="text-[10px] bg-brand-600 text-white font-bold px-2 py-0.5 rounded-full">מחובר כעת (את/ה)</span>' : ''}
+                <span class="text-[10px] text-slate-600 bg-slate-100 font-semibold px-2 py-0.5 rounded-full">${rm.sharePercent}% מהדירה</span>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                <i data-lucide="mail" class="w-3 h-3"></i> ${rm.email} • ${rm.room}
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <!-- Away mode toggle -->
+            <div class="flex items-center gap-1.5 ml-2">
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" ${rm.isAway ? 'checked' : ''} onchange="toggleAwayMode('${rm.id}', this.checked)" class="sr-only peer">
+                <div class="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-brand-600"></div>
+              </label>
+              <span class="text-[11px] text-slate-500">מילואים/חו״ל</span>
+            </div>
+
+            <!-- SECURITY CHECK: Only active user can delete / leave! -->
+            ${isMe ? `
+              <button onclick="selfRemoveAccount('${rm.id}', '${rm.name}')" class="text-rose-600 hover:text-white hover:bg-rose-600 border border-rose-200 px-3 py-1.5 rounded-xl font-bold text-[11px] transition flex items-center gap-1 shadow-sm">
+                <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                עזיבת דירה ומחיקת החשבון שלי
+              </button>
+            ` : `
+              <div class="text-[11px] text-slate-400 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-xl flex items-center gap-1 cursor-not-allowed" title="מטעמי אבטחה, רק הדייר עצמו מורשה להסיר את חשבונו">
+                <i data-lucide="lock" class="w-3 h-3 text-slate-400"></i>
+                נעול להסרה
+              </div>
+            `}
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // Percentage Customization Controls
+    function renderPercentageControls() {
+      const container = document.getElementById('percentage-controls-container');
+      container.innerHTML = '';
+
+      let currentSum = 0;
+      roommates.forEach((rm, index) => {
+        currentSum += rm.sharePercent;
+        const row = document.createElement('div');
+        row.className = "flex items-center justify-between p-2.5 bg-slate-50 rounded-2xl border border-slate-200 text-xs";
+        row.innerHTML = `
+          <div class="flex items-center gap-2 font-bold text-slate-800">
+            <span class="w-2.5 h-2.5 rounded-full bg-brand-500"></span>
+            ${rm.name} (${rm.room}):
+          </div>
+          <div class="flex items-center gap-1.5">
+            <input type="number" min="0" max="100" value="${rm.sharePercent}" 
+              onchange="updateRoommatePercent(${index}, this.value)" 
+              class="w-16 text-center font-bold border border-slate-300 rounded-lg px-2 py-1 bg-white outline-none focus:ring-2 focus:ring-brand-500">
+            <span class="font-bold text-slate-500">%</span>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+
+      // Update validation bar
+      const bar = document.getElementById('percent-total-bar');
+      const text = document.getElementById('percent-total-display');
+      if (currentSum === 100) {
+        bar.className = "p-3 rounded-2xl flex items-center justify-between text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200";
+        text.textContent = `100% ✔️ (תקין לחלוטין)`;
+      } else {
+        bar.className = "p-3 rounded-2xl flex items-center justify-between text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200";
+        text.textContent = `${currentSum}% ⚠️ (סך האחוזים חייב להסתכם ב-100%)`;
+      }
+    }
+
+    function updateRoommatePercent(index, newPercent) {
+      const val = parseInt(newPercent) || 0;
+      roommates[index].sharePercent = val;
+      renderPercentageControls();
+    }
+
+    function resetEqualPercentages() {
+      const equalShare = Math.floor(100 / roommates.length);
+      const remainder = 100 - (equalShare * roommates.length);
+      
+      roommates.forEach((rm, i) => {
+        rm.sharePercent = equalShare + (i === 0 ? remainder : 0);
+      });
+      renderPercentageControls();
+      renderRoommatesSettings();
+      triggerConfetti();
+      alert(`האחוזים אופסו לחלוקה שווה (${(100 / roommates.length).toFixed(0)}% לכל שותף)!`);
+    }
+
+    // Security Self Deletion
+    function selfRemoveAccount(id, name) {
+      if (confirm(`שלום ${name},\nהאם את/ה בטוח/ה שברצונך לעזוב את הדירה ולמחוק את חשבונך מהאפליקציה?\nודא/י שכל החובות שלך סולקו.`)) {
+        roommates = roommates.filter(r => r.id !== id);
+        resetEqualPercentages();
+        activeUser = roommates[0].id;
+        renderAll();
+        alert("החשבון הוסר בהצלחה. האפליקציה התעדכנה.");
+      }
+    }
+
+    // Invite Roommate via Personal Email Modal
+    function openInviteRoommateModal() {
+      document.getElementById('new-rm-name').value = '';
+      document.getElementById('new-rm-email').value = '';
+      document.getElementById('new-rm-room').value = '';
+      document.getElementById('invite-roommate-modal').classList.remove('hidden');
+    }
+    function closeInviteRoommateModal() {
+      document.getElementById('invite-roommate-modal').classList.add('hidden');
+    }
+
+    function saveInvitedRoommate() {
+      const name = document.getElementById('new-rm-name').value.trim();
+      const email = document.getElementById('new-rm-email').value.trim();
+      const room = document.getElementById('new-rm-room').value.trim() || 'חדר רגיל';
+      const percent = parseInt(document.getElementById('new-rm-percent').value) || 20;
+
+      if (!name || !email || !email.includes('@')) {
+        alert("נא להזין שם וכתובת אימייל אישית תקינה.");
+        return;
+      }
+
+      const id = 'rm_' + Date.now();
+      roommates.push({ id, name, email, sharePercent: percent, room, isAway: false });
+      
+      closeInviteRoommateModal();
+      resetEqualPercentages();
+      renderAll();
+      triggerConfetti();
+      alert(`הזמנה נשלחה בהצלחה לאימייל האישי ${email}! ${name} נוסף/ה לדירה.`);
+    }
+
+    // End-of-Month Debt Reminder Simulator
+    function triggerDebtNotificationDemo() {
+      // Find debtor (e.g. Heli or someone who owes money)
+      const debtor = settlements[0] ? settlements[0].from : 'חלי';
+      const creditor = settlements[0] ? settlements[0].to : 'נטלי';
+      const amount = settlements[0] ? settlements[0].amount : 115;
+
+      const titleEl = document.getElementById('toast-title');
+      const bodyEl = document.getElementById('toast-body');
+
+      titleEl.textContent = `תזכורת חודשית: יומיים לסיום המחזור (${debtor})`;
+      bodyEl.innerHTML = `היי <strong>${debtor}</strong>! נותרו יומיים לסגירת חשבונות הדירה. יש לך חוב פתוח של <strong class="text-white">₪${amount.toFixed(2)}</strong> ל<strong>${creditor}</strong>. לחצי כאן לתשלום ב-Bit.`;
+
+      const toast = document.getElementById('push-notification-toast');
+      toast.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closePushToast() {
+      document.getElementById('push-notification-toast').classList.add('hidden');
+    }
+
+    function toggleReminder(isEnabled) {
+      if (isEnabled) {
+        alert("תזכורת סוף חודש הופעלה! התראות פוש יישלחו לדיירים חייבים 2 ימים לפני סוף המחזור.");
+      } else {
+        alert("תזכורות סוף החודש הושבתו.");
+      }
+    }
+
+    function toggleAwayMode(id, isAway) {
+      const rm = roommates.find(r => r.id === id);
+      if (rm) {
+        rm.isAway = isAway;
+        if (isAway) {
+          alert(`${rm.name} הוגדר/ה במצב מילואים/חו״ל. הוצאות משתנות לא יחולקו עליו/ה.`);
+        } else {
+          alert(`${rm.name} חזר/ה לדירה והתווספ/ה מחדש לכל ההוצאות.`);
+        }
+      }
+    }
+
+    // Dashboard
+    function renderDashboard() {
+      const balanceEl = document.getElementById('user-balance-amount');
+      const balanceDesc = document.getElementById('user-balance-desc');
+      const balanceBadge = document.getElementById('balance-badge');
+
+      if (activeUser === 'natali') {
+        balanceEl.textContent = "+₪200.00";
+        balanceEl.className = "text-3xl font-extrabold text-emerald-600";
+        balanceDesc.textContent = "מגיע לך כסף מחלי ומטל";
+        balanceBadge.className = "p-2 rounded-xl bg-emerald-50 text-emerald-600";
+        balanceBadge.innerHTML = '<i data-lucide="arrow-down-left" class="w-4 h-4"></i>';
+      } else if (activeUser === 'heli') {
+        balanceEl.textContent = "-₪115.00";
+        balanceEl.className = "text-3xl font-extrabold text-rose-600";
+        balanceDesc.textContent = "את חייבת ₪115 לנטלי";
+        balanceBadge.className = "p-2 rounded-xl bg-rose-50 text-rose-600";
+        balanceBadge.innerHTML = '<i data-lucide="arrow-up-right" class="w-4 h-4"></i>';
+      } else if (activeUser === 'tal') {
+        balanceEl.textContent = "-₪85.00";
+        balanceEl.className = "text-3xl font-extrabold text-rose-600";
+        balanceDesc.textContent = "אתה חייב ₪85 לנטלי";
+        balanceBadge.className = "p-2 rounded-xl bg-rose-50 text-rose-600";
+        balanceBadge.innerHTML = '<i data-lucide="arrow-up-right" class="w-4 h-4"></i>';
+      } else {
+        balanceEl.textContent = "₪0.00";
+        balanceEl.className = "text-3xl font-extrabold text-slate-700";
+        balanceDesc.textContent = "המאזן שלך מאופס";
+        balanceBadge.className = "p-2 rounded-xl bg-slate-100 text-slate-600";
+        balanceBadge.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i>';
+      }
+
+      const total = expenses.reduce((sum, item) => sum + item.amount, 0);
+      document.getElementById('apartment-total').textContent = `₪${total.toLocaleString()}`;
+    }
+
+    // Expenses
+    function renderExpenses() {
+      const container = document.getElementById('expenses-list');
+      container.innerHTML = '';
+
+      const filtered = currentFilter === 'all' 
+        ? expenses 
+        : expenses.filter(e => e.category === currentFilter);
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">אין הוצאות בקטגוריה זו.</div>`;
+        return;
+      }
+
+      filtered.forEach(exp => {
+        const item = document.createElement('div');
+        item.className = "p-4 hover:bg-slate-50 transition-colors flex items-center justify-between gap-4";
+        
+        let catColor = "bg-slate-100 text-slate-700";
+        let catIcon = "receipt";
+        if (exp.category === 'חשבונות') { catColor = "bg-amber-50 text-amber-700"; catIcon = "zap"; }
+        if (exp.category === 'סופר') { catColor = "bg-emerald-50 text-emerald-700"; catIcon = "shopping-cart"; }
+        if (exp.category === 'בית') { catColor = "bg-indigo-50 text-indigo-700"; catIcon = "home"; }
+
+        item.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl ${catColor} flex items-center justify-center shrink-0">
+              <i data-lucide="${catIcon}" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-xs text-slate-900">${exp.title}</span>
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${catColor}">${exp.category}</span>
+                ${exp.isBimonthly ? '<span class="text-[10px] bg-purple-50 text-purple-700 font-semibold px-2 py-0.5 rounded-full border border-purple-200">דו-חודשי</span>' : ''}
+              </div>
+              <p class="text-[11px] text-slate-400 mt-0.5">
+                שולם ע״י <strong class="text-slate-600 font-semibold">${exp.payer}</strong> • מתחלק בין ${roommates.length} שותפים • ${exp.date}
+              </p>
+            </div>
+          </div>
+          <div class="text-left">
+            <span class="text-sm font-extrabold text-slate-900">₪${exp.amount.toFixed(2)}</span>
+            <div class="text-[10px] text-slate-400">₪${(exp.amount / roommates.length).toFixed(2)} לשותף</div>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function filterExpenses(cat) {
+      currentFilter = cat;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        if ((cat === 'all' && btn.textContent.includes('הכל')) || btn.textContent.includes(cat)) {
+          btn.className = "filter-btn font-semibold text-brand-600 bg-brand-50 px-2.5 py-1 rounded-lg";
+        } else {
+          btn.className = "filter-btn text-slate-500 hover:text-slate-800 px-2.5 py-1 rounded-lg";
+        }
+      });
+      renderExpenses();
+      lucide.createIcons();
+    }
+
+    // Wishlist
+    function renderWishlist() {
+      const container = document.getElementById('wishlist-items-container');
+      const badge = document.getElementById('wishlist-badge');
+      badge.textContent = wishlist.length;
+      container.innerHTML = '';
+
+      if (wishlist.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-2xl">
+            🎉 לא חסר כלום בדירה כרגע!
+          </div>
+        `;
+        return;
+      }
+
+      wishlist.forEach(item => {
+        const row = document.createElement('div');
+        row.className = "p-3 bg-slate-50 hover:bg-slate-100/80 rounded-2xl border border-slate-200 flex items-center justify-between gap-3 text-xs transition";
+        row.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+            <div>
+              <span class="font-bold text-slate-800">${item.title}</span>
+              <p class="text-[10px] text-slate-400">ביקש/ה: ${item.requestedBy} • סכום משוער: ${item.estimated}</p>
+            </div>
+          </div>
+          <button onclick="claimWishlistItem(${item.id}, '${item.title}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1 shadow-sm text-[11px]">
+            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+            קניתי את זה!
+          </button>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function claimWishlistItem(id, title) {
+      const price = prompt(`כמה עלה "${title}"?`, "35");
+      if (price && !isNaN(price)) {
+        wishlist = wishlist.filter(i => i.id !== id);
+        const currentRm = roommates.find(r => r.id === activeUser) || roommates[0];
+        expenses.unshift({
+          id: Date.now(),
+          title: `קנייה מהרשימה: ${title}`,
+          amount: parseFloat(price),
+          payer: currentRm.name,
+          category: 'בית',
+          date: 'זה עתה',
+          isBimonthly: false
+        });
+        triggerConfetti();
+        renderAll();
+        alert(`מעולה! ההוצאה נוספה והמאזן עודכן לטובתך.`);
+      }
+    }
+
+    function addWishlistItem() {
+      const input = document.getElementById('new-item-input');
+      const val = input.value.trim();
+      if (!val) return;
+      const currentRm = roommates.find(r => r.id === activeUser) || roommates[0];
+      wishlist.push({
+        id: Date.now(),
+        title: val,
+        requestedBy: currentRm.name,
+        estimated: '₪25'
+      });
+      input.value = '';
+      renderWishlist();
+      lucide.createIcons();
+    }
+
+    // Settlements
+    function renderSettlements() {
+      const container = document.getElementById('settlement-actions-list');
+      container.innerHTML = '';
+
+      settlements.forEach((s, idx) => {
+        const card = document.createElement('div');
+        card.className = "p-4 rounded-2xl border border-slate-200 bg-white hover:border-brand-200 transition flex items-center justify-between gap-4";
+        
+        card.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center font-bold">
+              ${s.from[0]}
+            </div>
+            <div>
+              <div class="text-xs font-bold text-slate-800">
+                ${s.from} מעביר/ה ל${s.to}
+              </div>
+              <div class="text-[11px] text-slate-400">
+                סגירת חוב תקופתי
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-base font-extrabold text-slate-900">₪${s.amount.toFixed(2)}</span>
+            <button onclick="openBitModal('${s.from}', '${s.to}', ${s.amount}, ${idx})" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm shadow-blue-500/20">
+              <i data-lucide="send" class="w-3.5 h-3.5"></i>
+              העבר ב-Bit
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Add Expense Modal
+    function openAddExpenseModal() {
+      document.getElementById('add-expense-modal').classList.remove('hidden');
+    }
+    function closeAddExpenseModal() {
+      document.getElementById('add-expense-modal').classList.add('hidden');
+    }
+
+    function saveExpense() {
+      const title = document.getElementById('exp-title').value.trim();
+      const amount = parseFloat(document.getElementById('exp-amount').value);
+      const category = document.getElementById('exp-category').value;
+      const payer = document.getElementById('exp-payer').value;
+      const isBimonthly = document.getElementById('exp-is-bimonthly').checked;
+
+      if (!title || isNaN(amount) || amount <= 0) {
+        alert("נא למלא תיאור וסכום תקין");
+        return;
+      }
+
+      expenses.unshift({
+        id: Date.now(),
+        title,
+        amount,
+        payer,
+        category,
+        date: 'זה עתה',
+        isBimonthly
+      });
+
+      closeAddExpenseModal();
+      document.getElementById('exp-title').value = '';
+      document.getElementById('exp-amount').value = '';
+      document.getElementById('exp-is-bimonthly').checked = false;
+      renderAll();
+      triggerConfetti();
+    }
+
+    // OCR Modal
+    function openOcrModal() {
+      document.getElementById('ocr-modal').classList.remove('hidden');
+      recalcOcrTotal();
+    }
+    function closeOcrModal() {
+      document.getElementById('ocr-modal').classList.add('hidden');
+    }
+
+    function recalcOcrTotal() {
+      let sum = 0;
+      document.querySelectorAll('.ocr-item').forEach(checkbox => {
+        if (checkbox.checked) {
+          sum += parseFloat(checkbox.dataset.price);
+        }
+      });
+      document.getElementById('ocr-shared-total').textContent = `₪${sum.toFixed(2)}`;
+    }
+
+    function approveOcrExpense() {
+      let sum = 0;
+      document.querySelectorAll('.ocr-item').forEach(checkbox => {
+        if (checkbox.checked) {
+          sum += parseFloat(checkbox.dataset.price);
+        }
+      });
+
+      if (sum <= 0) {
+        alert("לא סומנו פריטים משותפים");
+        return;
+      }
+
+      const currentRm = roommates.find(r => r.id === activeUser) || roommates[0];
+      expenses.unshift({
+        id: Date.now(),
+        title: 'קניות סופרמרקט (סריקת קבלה חכמה)',
+        amount: sum,
+        payer: currentRm.name,
+        category: 'סופר',
+        date: 'זה עתה',
+        isBimonthly: false
+      });
+
+      closeOcrModal();
+      renderAll();
+      triggerConfetti();
+      alert(`הקבלה נקלטה בהצלחה! ₪${sum.toFixed(2)} חולקו בין 4 השותפים.`);
+    }
+
+    // Bit Modal
+    let pendingSettlementIdx = null;
+    function openBitModal(from, to, amount, idx) {
+      pendingSettlementIdx = idx;
+      document.getElementById('bit-modal-title').textContent = `העברה מ${from} ל${to}`;
+      document.getElementById('bit-modal-amount').textContent = `₪${amount.toFixed(2)}`;
+      document.getElementById('bit-modal').classList.remove('hidden');
+    }
+    function closeBitModal() {
+      document.getElementById('bit-modal').classList.add('hidden');
+    }
+    function confirmSettlementPayment() {
+      if (pendingSettlementIdx !== null) {
+        settlements.splice(pendingSettlementIdx, 1);
+        pendingSettlementIdx = null;
+      }
+      closeBitModal();
+      renderSettlements();
+      triggerConfetti();
+      alert("מעולה! התשלום סומן כהושלם והחוב בדירה אופס!");
+    }
+
+    // Tab Navigation
+    function switchTab(tabId) {
+      ['expenses-tab', 'wishlist-tab', 'settle-tab', 'settings-tab'].forEach(t => {
+        document.getElementById(t).classList.add('hidden');
+      });
+      document.getElementById(tabId).classList.remove('hidden');
+
+      const map = {
+        'expenses-tab': 'tab-btn-expenses',
+        'wishlist-tab': 'tab-btn-wishlist',
+        'settle-tab': 'tab-btn-settle',
+        'settings-tab': 'tab-btn-settings'
+      };
+
+      Object.entries(map).forEach(([k, btnId]) => {
+        const el = document.getElementById(btnId);
+        if (k === tabId) {
+          el.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all bg-white text-slate-900 shadow-sm flex items-center gap-2 whitespace-nowrap";
+        } else {
+          el.className = "px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 transition-all flex items-center gap-2 whitespace-nowrap";
+        }
+      });
+      lucide.createIcons();
+    }
+
+    function triggerConfetti() {
+      if (window.confetti) {
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.8 }
+        });
+      }
+    }
+  </script>
+</body>
+</html>
